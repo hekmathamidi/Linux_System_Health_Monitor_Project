@@ -1,59 +1,58 @@
-# Linux System Health Monitoring Tool Using Bash
+# Linux System Health Monitoring Tool (Python)
 
-## Project overview
-A small menu-driven Bash application for Kali Linux that displays basic system health and configuration information. It demonstrates Linux Essentials topics such as shell scripting, commands, process monitoring, networking, service management, pipes, redirection, and text processing.
+A menu-driven Python project for Kali Linux developed as part of the Linux Essentials for Cyber Security course. It monitors basic system information and resource usage, displays network details and service status, lists top processes, and generates a timestamped report.
 
 ## Features
-1. System information (hostname, OS, kernel, uptime, current user)
-2. CPU and RAM usage
-3. Root filesystem disk usage
-4. IP addresses and default route
-5. SSH and Apache service status
-6. Top 10 processes by CPU usage
-7. Generate a timestamped text report
-
-Reports are saved in `~/linux_health_reports/`.
+- System information: hostname, kernel, OS, uptime, and current user
+- CPU utilization estimate (sampled over one second)
+- RAM usage from `/proc/meminfo`
+- Root disk usage
+- Network interfaces and default route
+- SSH and Apache systemd service status
+- Top 10 processes sorted by CPU usage
+- Timestamped text report saved in `~/linux_health_reports/`
 
 ## Requirements
 - Kali Linux or another Linux distribution
-- Bash
-- Common utilities: `awk`, `df`, `ip`, `ps`, `systemctl`
-- `sleep` and `head`
+- Python 3
+- Common Linux utilities: `ip`, `systemctl`, `ps`, and `df`
 
-Most features run as a regular user. Service status may depend on systemd and the service being installed.
+The Python program uses only Python's standard library; it does not require pip packages.
 
 ## Run
-Open a terminal in the project folder:
-
 ```bash
-chmod +x linux_health_monitor.sh
-./linux_health_monitor.sh
+python3 linux_health_monitor.py
 ```
 
-## Demonstration plan
-1. Start the script and show its menu.
-2. Choose System Information.
-3. Show CPU and RAM usage.
-4. Show disk and network details.
-5. Check SSH/Apache service statuses.
-6. Generate a report and open it:
+## Report location
+Generated reports are saved under:
+```text
+~/linux_health_reports/
+```
+
+## Demonstration
+1. Run the application.
+2. Show system information.
+3. Show CPU and RAM readings.
+4. Display disk space and network configuration.
+5. Check SSH and Apache status.
+6. Show the top processes.
+7. Generate a report and view it with:
    ```bash
    ls -l ~/linux_health_reports
    cat ~/linux_health_reports/health_report_*.txt
    ```
-7. Exit the application.
 
-## Concepts used
-- Bash variables, functions, `case`, `while`, `read`
-- `hostname`, `uname`, `uptime`, `whoami`
-- `/proc/stat` and `/proc/meminfo`
-- `awk`, `df`, `ip`, `ps`, `head`
-- `systemctl is-active`
-- Output redirection (`>`) and pipes (`|`)
+## Concepts demonstrated
+- Python functions, variables, conditionals, loops
+- Standard-library modules: `os`, `platform`, `subprocess`, `shutil`, `datetime`, `pathlib`
+- Reading Linux virtual files `/proc/stat`, `/proc/meminfo`, and `/proc/uptime`
+- Calling Linux commands safely through `subprocess`
+- File and report handling
+- Exception handling
 
 ## Limitations
-- CPU usage is sampled over one second and is an approximate snapshot.
-- Service checks only look for `ssh` and `apache2`.
-- Root filesystem disk usage is used for the summary; the full report lists all mounted filesystems.
-- It is a local monitoring tool, not a remote monitoring or alerting platform.
-
+- CPU usage is an approximate one-second sample.
+- Service checks query systemd for the named services `ssh` and `apache2`.
+- The tool monitors the local computer, not remote hosts.
+- Health thresholds are simple project-level indicators, not a production monitoring system.
