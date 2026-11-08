@@ -57,19 +57,3 @@ chmod +x linux_health_monitor.sh
 - Root filesystem disk usage is used for the summary; the full report lists all mounted filesystems.
 - It is a local monitoring tool, not a remote monitoring or alerting platform.
 
-## Suggested project defense questions
-**What is Bash?** A command interpreter and scripting language used to automate tasks in Linux.
-
-**Why use a script?** It combines repeated checks into one menu-driven tool and report.
-
-**What does `df` show?** Filesystem disk space usage.
-
-**What does `systemctl is-active` check?** Whether a systemd service is active.
-
-**What is `/proc`?** A virtual filesystem exposing kernel and process information.
-
-**What does a pipe (`|`) do?** Sends the output of one command as input to another command.
-
-**What does redirection (`>`) do?** Writes command output to a file, replacing its contents.
-
-**Does this tool need root?** Most checks do not. Some service/system information can vary based on permissions and system configuration.
