@@ -64,13 +64,17 @@ def get_uptime():
         days, remainder = divmod(seconds, 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes, _ = divmod(remainder, 60)
+
         parts = []
+
         if days:
             parts.append(f"{days} day(s)")
         if hours:
             parts.append(f"{hours} hour(s)")
+
         parts.append(f"{minutes} minute(s)")
         return ", ".join(parts)
+
     except (OSError, ValueError, IndexError):
         return run_command(["uptime", "-p"])
 
@@ -79,10 +83,11 @@ def read_cpu_times():
     """Read aggregate CPU counters from the first line of /proc/stat."""
     with open("/proc/stat", "r", encoding="utf-8") as file:
         fields = file.readline().split()
-    # fields[0] is 'cpu'; the remaining entries are CPU time counters.
+
     values = [int(value) for value in fields[1:]]
-    idle = values[3] + (values[4] if len(values) > 4 else 0)  # idle + iowait
+    idle = values[3] + (values[4] if len(values) > 4 else 0)
     total = sum(values)
+
     return total, idle
 
 
@@ -90,13 +95,19 @@ def cpu_usage(interval=1.0):
     """Estimate CPU utilization across a short sampling interval."""
     try:
         total_before, idle_before = read_cpu_times()
+
         time.sleep(interval)
+
         total_after, idle_after = read_cpu_times()
+
         total_delta = total_after - total_before
         idle_delta = idle_after - idle_before
+
         if total_delta <= 0:
             return None
+
         return 100.0 * (total_delta - idle_delta) / total_delta
+
     except (OSError, ValueError, IndexError):
         return None
 
@@ -105,16 +116,21 @@ def memory_info():
     """Return RAM total, available, used, and percentage from /proc/meminfo."""
     try:
         values = {}
+
         with open("/proc/meminfo", "r", encoding="utf-8") as file:
             for line in file:
                 key, value = line.split(":", 1)
+
                 if key in ("MemTotal", "MemAvailable"):
-                    values[key] = int(value.strip().split()[0])  # KiB
+                    values[key] = int(value.strip().split()[0])
+
         total = values["MemTotal"]
         available = values["MemAvailable"]
         used = total - available
         percent = (used / total * 100) if total else 0.0
+
         return total, available, used, percent
+
     except (OSError, ValueError, KeyError, IndexError):
         return None
 
@@ -122,11 +138,17 @@ def memory_info():
 def memory_usage():
     """Print RAM usage."""
     data = memory_info()
+
     if data is None:
         print("RAM information unavailable.")
         return
+
     total, available, used, percent = data
-    print(f"RAM Used: {percent:.1f}% ({used // 1024} MiB used of {total // 1024} MiB total)")
+
+    print(
+        f"RAM Used: {percent:.1f}% "
+        f"({used // 1024} MiB used of {total // 1024} MiB total)"
+    )
 
 
 def disk_info(path="/"):
@@ -134,7 +156,9 @@ def disk_info(path="/"):
     try:
         usage = shutil.disk_usage(path)
         percent = (usage.used / usage.total * 100) if usage.total else 0.0
+
         return usage, percent
+
     except OSError:
         return None, None
 
@@ -142,13 +166,17 @@ def disk_info(path="/"):
 def disk_usage():
     """Display root filesystem disk usage."""
     usage, percent = disk_info("/")
+
     if usage is None:
         print("Disk information unavailable.")
         return
+
     print("Filesystem  Size  Used  Free  Use%")
+
     print(
         f"/           {format_bytes(usage.total):>5} "
-        f"{format_bytes(usage.used):>5} {format_bytes(usage.free):>5} "
+        f"{format_bytes(usage.used):>5} "
+        f"{format_bytes(usage.free):>5} "
         f"{percent:.0f}%"
     )
 
@@ -156,10 +184,13 @@ def disk_usage():
 def format_bytes(number):
     """Format bytes using readable units."""
     value = float(number)
+
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if value < 1024 or unit == "TB":
             return f"{value:.1f}{unit}"
+
         value /= 1024
+
     return f"{value:.1f}TB"
 
 
@@ -168,11 +199,15 @@ def network_info():
     print_line()
     print("NETWORK INFORMATION")
     print_line()
+
     print("IP addresses:")
     print(run_command(["ip", "-brief", "address", "show"]))
+
     print()
     print("Default route:")
+
     route_output = run_command(["ip", "route", "show", "default"])
+
     if route_output.startswith("Command not found") or not route_output:
         print("No default route found or the ip command is unavailable.")
     else:
@@ -182,20 +217,25 @@ def network_info():
 def service_status(service):
     """Return a readable systemd status for a service."""
     result = run_command(["systemctl", "is-active", service])
+
     if result == "active":
         return f"{service:<10} : ACTIVE"
+
     if result.startswith("Command not found"):
         return f"{service:<10} : systemctl not available"
+
     return f"{service:<10} : INACTIVE, not installed, or status unavailable"
 
 
 def services_check():
-    """Check SSH and Apache service status."""
+    """Check SSH, Apache, and XRDP service status."""
     print_line()
     print("SERVICE STATUS")
     print_line()
+
     print(service_status("ssh"))
     print(service_status("apache2"))
+    print(service_status("xrdp"))
 
 
 def top_processes(limit=10):
@@ -204,10 +244,13 @@ def top_processes(limit=10):
         ["ps", "-eo", "pid,comm,%cpu,%mem", "--sort=-%cpu"],
         timeout=5,
     )
+
     if result.startswith("Command not found") or result.startswith("Error:"):
         return result
+
     lines = result.splitlines()
-    return "\n".join(lines[: limit + 1])  # Include header plus requested process count
+
+    return "\n".join(lines[: limit + 1])
 
 
 def processes():
@@ -215,6 +258,7 @@ def processes():
     print_line()
     print("TOP 10 PROCESSES BY CPU")
     print_line()
+
     print(top_processes())
 
 
@@ -225,6 +269,7 @@ def health_summary():
     disk, disk_percent = disk_info("/")
 
     ram_percent = memory[3] if memory else None
+
     status = "NORMAL"
 
     if (ram_percent is not None and ram_percent >= 85) or (
@@ -244,41 +289,64 @@ def health_summary():
 def generate_report():
     """Write system checks to a timestamped text report."""
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
+
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
     report_path = REPORT_DIR / f"health_report_{timestamp}.txt"
 
-    # Capture the report's output by redirecting stdout temporarily.
     import contextlib
     import io
 
     report_buffer = io.StringIO()
+
     with contextlib.redirect_stdout(report_buffer):
         print("LINUX SYSTEM HEALTH REPORT")
-        print(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+        print(
+            f"Generated: "
+            f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+
         print()
+
         system_info()
+
         print()
         print_line()
         print("RESOURCE USAGE")
         print_line()
+
         health_summary()
+
         print()
         print_line()
         print("DISK SPACE")
         print_line()
+
         print(run_command(["df", "-hP"]))
+
         print()
+
         network_info()
+
         print()
+
         services_check()
+
         print()
+
         processes()
 
     try:
-        report_path.write_text(report_buffer.getvalue(), encoding="utf-8")
+        report_path.write_text(
+            report_buffer.getvalue(),
+            encoding="utf-8",
+        )
+
         print()
         print("Report generated successfully:")
         print(report_path)
+
     except OSError as exc:
         print(f"Could not save report: {exc}")
 
@@ -286,17 +354,20 @@ def generate_report():
 def show_menu():
     """Clear the terminal and display the main menu."""
     os.system("clear")
+
     print_line()
     print("      LINUX SYSTEM HEALTH MONITOR")
     print_line()
+
     print("1. System Information")
     print("2. CPU and RAM Usage")
     print("3. Disk Space")
     print("4. Network Information")
-    print("5. Check Services (SSH / Apache)")
+    print("5. Check Services (SSH / Apache / XRDP)")
     print("6. Top Running Processes")
     print("7. Generate System Report")
     print("8. Exit")
+
     print_line()
 
 
@@ -306,27 +377,42 @@ def main():
 
     while True:
         show_menu()
+
         choice = input("Enter your choice [1-8]: ").strip()
 
         if choice == "1":
             system_info()
+
         elif choice == "2":
             cpu = cpu_usage()
-            print(f"CPU Usage: {cpu:.1f}%" if cpu is not None else "CPU Usage: N/A")
+
+            print(
+                f"CPU Usage: {cpu:.1f}%"
+                if cpu is not None
+                else "CPU Usage: N/A"
+            )
+
             memory_usage()
+
         elif choice == "3":
             disk_usage()
+
         elif choice == "4":
             network_info()
+
         elif choice == "5":
             services_check()
+
         elif choice == "6":
             processes()
+
         elif choice == "7":
             generate_report()
+
         elif choice == "8":
             print("Thank you for using Linux System Health Monitor.")
             break
+
         else:
             print("Invalid choice. Please enter a number from 1 to 8.")
 
